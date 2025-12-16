@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can keep this font rule if you want, but delete everything else */
+body {
+  font-family: 'Inter', sans-serif; 
+}
