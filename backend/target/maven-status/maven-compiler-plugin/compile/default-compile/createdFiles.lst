@@ -1,5 +1,4 @@
 com\example\hostel\service\JwtService.class
-com\example\hostel\dto\LoginResponse$UserResponse.class
 com\example\hostel\config\SecurityConfig.class
 com\example\hostel\model\Hostel.class
 com\example\hostel\model\User.class
@@ -12,6 +11,8 @@ com\example\hostel\controller\ComplaintController.class
 com\example\hostel\model\AttendanceRecord.class
 com\example\hostel\model\RoomAssignment.class
 com\example\hostel\repository\RoomRepository.class
+com\example\hostel\config\SecurityConfig$1.class
+com\example\hostel\dto\StudentCreationResponse.class
 com\example\hostel\repository\StudentRepository.class
 com\example\hostel\repository\AttendanceRecordRepository.class
 com\example\hostel\exception\GlobalExceptionHandler.class

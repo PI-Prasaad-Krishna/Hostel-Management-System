@@ -1,15 +1,15 @@
 package com.example.hostel.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-
 public class LoginRequest {
-    @NotBlank
-    @Email
+    //@NotBlank
+    //@Email
     private String email;
 
-    @NotBlank
+    //@NotBlank
     private String password;
+
+    public LoginRequest() {
+    }
 
     public String getEmail() {
         return email;
