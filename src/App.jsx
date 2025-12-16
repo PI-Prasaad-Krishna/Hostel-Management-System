@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Complaints from './pages/Complaints';
 import Settings from './pages/Settings';
 import StudentProfiles from './pages/StudentProfiles';
+import HostelManagement from './pages/HostelManagement';
 
 // IMPORT YOUR REAL PAGES HERE
 import Dashboard from './pages/Dashboard';
@@ -34,6 +35,11 @@ const App = () => {
             <Route path="rooms" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                     <RoomAllocation />
+                </ProtectedRoute>
+            } />
+            <Route path="hostels" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <HostelManagement />
                 </ProtectedRoute>
             } />
 
