@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, BedDouble, Users, CalendarCheck, AlertCircle, Settings, LogOut, Bell, Search } from 'lucide-react';
+import { LayoutDashboard, BedDouble, Users, CalendarCheck, AlertCircle, Settings, LogOut, Bell, Search, Building } from 'lucide-react';
 
 const SidebarItem = ({ icon: Icon, text, to, active }) => (
   <Link to={to} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-slate-800 hover:text-white'}`}>
@@ -32,6 +32,7 @@ const Layout = () => {
             <>
               <SidebarItem icon={BedDouble} text="Room Allocation" to="/rooms" active={location.pathname === '/rooms'} />
               <SidebarItem icon={Users} text="Student Profiles" to="/students" active={location.pathname === '/students'} />
+              <SidebarItem icon={Building} text="Hostel Config" to="/hostels" active={location.pathname === '/hostels'} />
             </>
           )}
 
