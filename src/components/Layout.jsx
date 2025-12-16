@@ -16,6 +16,9 @@ const Layout = () => {
 
   if (!user) return <Outlet />; // Render Login page if not authenticated
 
+  // SAFETY CHECK: Normalize role to lowercase to handle "ADMIN", "Admin", or "admin"
+  const isAdmin = user.role && user.role.toLowerCase() === 'admin';
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       {/* Sidebar - Dark Blue */}
@@ -27,11 +30,11 @@ const Layout = () => {
         <nav className="flex-1 px-4 space-y-2 mt-4">
           <SidebarItem icon={LayoutDashboard} text="Dashboard" to="/" active={location.pathname === '/'} />
           
-          {/* Admin Only Links */}
-          {user.role === 'admin' && (
+          {/* Admin Only Links - Now using safe 'isAdmin' check */}
+          {isAdmin && (
             <>
+              <SidebarItem icon={Users} text="Students" to="/students" active={location.pathname === '/students'} />
               <SidebarItem icon={BedDouble} text="Room Allocation" to="/rooms" active={location.pathname === '/rooms'} />
-              <SidebarItem icon={Users} text="Student Profiles" to="/students" active={location.pathname === '/students'} />
               <SidebarItem icon={Building} text="Hostel Config" to="/hostels" active={location.pathname === '/hostels'} />
             </>
           )}
@@ -65,9 +68,12 @@ const Layout = () => {
                 </button>
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
-                        {user.name.charAt(0)}
+                        {user.name ? user.name.charAt(0) : 'U'}
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                        <span className="text-xs text-gray-500 capitalize">{user.role}</span>
+                    </div>
                 </div>
             </div>
         </header>

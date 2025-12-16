@@ -1,21 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, MoreVertical, MapPin, Phone } from 'lucide-react';
-import Modal from '../components/Modal'; // Import the new Modal
+import Modal from '../components/Modal';
+import { getAllStudents, addStudent } from '../services/studentServices'; // Import the service
 
 const StudentProfiles = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [students, setStudents] = useState([]); // Store REAL data here
 
-  // Mock Data
-  const [students] = useState([
-    { id: 'STU001', name: 'Rahul Sharma', email: 'rahul.s@example.com', room: 'A-101', block: 'Block A', phone: '+91 98765 43210', status: 'Active' },
-    { id: 'STU002', name: 'Priya Patel', email: 'priya.p@example.com', room: 'A-102', block: 'Block A', phone: '+91 98765 43211', status: 'Active' },
-  ]);
+  // State to hold form data (Matches Java StudentRequest fields)
+  const [formData, setFormData] = useState({
+      name: '', 
+      rollNo: '', 
+      department: 'CSE', 
+      year: '1st Year', 
+      gender: 'Male', 
+      contact: '', 
+      guardianName: '', 
+      guardianPhone: ''
+  });
 
-  const handleSubmit = (e) => {
+  // 1. Fetch Students when page loads
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const data = await getAllStudents();
+      setStudents(data);
+    } catch (error) {
+      console.error("Failed to fetch students", error);
+    }
+  };
+
+  // 2. Handle Form Submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your API call logic here
-    console.log("Form Submitted");
-    setIsModalOpen(false);
+    try {
+      await addStudent(formData); // Send data to Backend
+      alert("Student Added Successfully!");
+      
+      setIsModalOpen(false); // Close Modal
+      fetchStudents();       // Refresh Table
+      
+      // Reset Form
+      setFormData({
+        name: '', rollNo: '', department: 'CSE', year: '1st Year', 
+        gender: 'Male', contact: '', guardianName: '', guardianPhone: ''
+      });
+    } catch (error) {
+      alert("Failed to add student. Check console.");
+      console.error(error);
+    }
   };
 
   return (
@@ -27,7 +63,7 @@ const StudentProfiles = () => {
           <p className="text-gray-500 text-sm">View and manage student information</p>
         </div>
         <button 
-            onClick={() => setIsModalOpen(true)} // Open Modal
+            onClick={() => setIsModalOpen(true)} 
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
         >
           <Plus size={20} /> Add Student
@@ -37,7 +73,6 @@ const StudentProfiles = () => {
       {/* --- ADD STUDENT MODAL --- */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add New Student">
         <form onSubmit={handleSubmit} className="space-y-6">
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Personal Info */}
                 <div className="space-y-4">
@@ -45,18 +80,36 @@ const StudentProfiles = () => {
                     
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input required type="text" placeholder="e.g. Rahul Sharma" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input 
+                            required 
+                            type="text" 
+                            value={formData.name} 
+                            onChange={e => setFormData({...formData, name: e.target.value})} 
+                            placeholder="e.g. Rahul Sharma" 
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" 
+                        />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Register / Roll No</label>
-                        <input required type="text" placeholder="e.g. 2024CSE001" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input 
+                            required 
+                            type="text" 
+                            value={formData.rollNo} 
+                            onChange={e => setFormData({...formData, rollNo: e.target.value})} 
+                            placeholder="e.g. 2024CSE001" 
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" 
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                            <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <select 
+                                value={formData.gender} 
+                                onChange={e => setFormData({...formData, gender: e.target.value})} 
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
                                 <option>Male</option>
                                 <option>Female</option>
                                 <option>Other</option>
@@ -64,7 +117,14 @@ const StudentProfiles = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                            <input required type="tel" placeholder="+91" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                            <input 
+                                required 
+                                type="tel" 
+                                value={formData.contact} 
+                                onChange={e => setFormData({...formData, contact: e.target.value})} 
+                                placeholder="+91" 
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" 
+                            />
                         </div>
                     </div>
                 </div>
@@ -76,7 +136,11 @@ const StudentProfiles = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                            <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <select 
+                                value={formData.department} 
+                                onChange={e => setFormData({...formData, department: e.target.value})} 
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
                                 <option>CSE</option>
                                 <option>ECE</option>
                                 <option>MECH</option>
@@ -85,7 +149,11 @@ const StudentProfiles = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                            <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <select 
+                                value={formData.year} 
+                                onChange={e => setFormData({...formData, year: e.target.value})} 
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
                                 <option>1st Year</option>
                                 <option>2nd Year</option>
                                 <option>3rd Year</option>
@@ -96,12 +164,26 @@ const StudentProfiles = () => {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Name</label>
-                        <input required type="text" placeholder="Parent/Guardian Name" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input 
+                            required 
+                            type="text" 
+                            value={formData.guardianName} 
+                            onChange={e => setFormData({...formData, guardianName: e.target.value})} 
+                            placeholder="Parent/Guardian Name" 
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" 
+                        />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Guardian Phone</label>
-                        <input required type="tel" placeholder="+91" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                        <input 
+                            required 
+                            type="tel" 
+                            value={formData.guardianPhone} 
+                            onChange={e => setFormData({...formData, guardianPhone: e.target.value})} 
+                            placeholder="+91" 
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" 
+                        />
                     </div>
                 </div>
             </div>
@@ -114,10 +196,43 @@ const StudentProfiles = () => {
         </form>
       </Modal>
 
-      {/* Existing Table Code (Kept Short for Brevity - Use your previous table code here) */}
+      {/* STUDENT TABLE - Showing Real Data */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-         {/* ... (Your previous Table Code goes here) ... */}
-         <div className="p-8 text-center text-gray-500">Student Table (Same as before)</div>
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 border-b border-gray-100">
+            <tr>
+              <th className="p-4 text-sm font-semibold text-gray-600">Name</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Roll No</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Dept</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Contact</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Guardian</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {students.length > 0 ? (
+                students.map((student) => (
+                <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="p-4 font-medium text-gray-800">{student.name}</td>
+                    <td className="p-4 text-gray-600">{student.rollNo}</td>
+                    <td className="p-4 text-gray-600">{student.department}</td>
+                    <td className="p-4 text-gray-600">
+                        <div className="flex items-center gap-2">
+                            <Phone size={14} />
+                            {student.contact}
+                        </div>
+                    </td>
+                    <td className="p-4 text-gray-600">{student.guardianName}</td>
+                </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colSpan="5" className="p-8 text-center text-gray-500">
+                        No students found. Click "Add Student" to create one.
+                    </td>
+                </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
