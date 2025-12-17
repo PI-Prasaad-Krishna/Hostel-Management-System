@@ -1,99 +1,147 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Bell, Shield, Save, Building } from 'lucide-react';
+import { getAllStudents } from '../services/studentServices';
+import { User, Mail, Phone, Home, Building } from 'lucide-react';
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Get the currently logged-in user
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '', // We'll use Roll No as username/email identifier
+    phone: '',
+    room: '',
+    department: ''
+  });
+
+  useEffect(() => {
+    // If the logged-in user is a student, find their specific details
+    const fetchStudentDetails = async () => {
+      if (user && user.role === 'student') {
+        try {
+          // Ideally, you'd have a specific API like `getStudentByRollNo(user.username)`
+          // For now, we can fetch all and filter (simple workaround for your current setup)
+          const students = await getAllStudents();
+          const myProfile = students.find(s => s.rollNo === user.username);
+
+          if (myProfile) {
+            setProfileData({
+              name: myProfile.name,
+              email: myProfile.rollNo, // Displaying Roll No in the "Email/ID" field
+              phone: myProfile.contact,
+              // Check if room is assigned, otherwise show "Not Allocated"
+              room: myProfile.current_room_id ? `Room ID: ${myProfile.current_room_id}` : 'Not Allocated Yet',
+              department: myProfile.department
+            });
+          }
+        } catch (error) {
+          console.error("Could not load profile", error);
+        }
+      } else {
+        // Fallback for Admin or other users
+        setProfileData({
+          name: 'Admin User',
+          email: 'admin@hostel.com',
+          phone: '+91 98765 43210',
+          room: 'N/A (Admin Office)',
+          department: 'Administration'
+        });
+      }
+    };
+
+    fetchStudentDetails();
+  }, [user]);
 
   return (
-    <div className="max-w-4xl space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
-        <p className="text-gray-500">Manage your profile and preferences</p>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-1">Profile Settings</h2>
+        <p className="text-gray-500 text-sm mb-6">View your personal information</p>
 
-      {/* Profile Settings Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <User size={20} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Full Name - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                readOnly
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
+                value={profileData.name}
+              />
             </div>
-            <h3 className="font-semibold text-gray-800">Profile Information</h3>
+          </div>
+
+          {/* Roll No / Username - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Roll No / Username</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                readOnly
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
+                value={profileData.email}
+              />
+            </div>
+          </div>
+
+          {/* Phone Number - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                readOnly
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
+                value={profileData.phone}
+              />
+            </div>
+          </div>
+
+          {/* Room Number - Read Only */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Room</label>
+            <div className="relative">
+              <Home className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                readOnly
+                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg cursor-not-allowed focus:outline-none font-medium ${
+                  profileData.room.includes('Not') 
+                    ? 'bg-yellow-50 border-yellow-200 text-yellow-700' 
+                    : 'bg-green-50 border-green-200 text-green-700'
+                }`}
+                value={profileData.room}
+              />
+            </div>
+          </div>
+
+           {/* Department - Read Only */}
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <div className="relative">
+              <Building className="absolute left-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                readOnly
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none"
+                value={profileData.department}
+              />
+            </div>
+          </div>
+
         </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                <input type="text" defaultValue={user.name} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input type="email" defaultValue={user.email} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input type="text" defaultValue="+91 98765 43210" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                <input type="text" defaultValue="A-101" disabled className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed" />
-            </div>
-        </div>
-        <div className="p-4 bg-gray-50 text-right">
-            <button className="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors">Save Changes</button>
+
+        {/* Info Note */}
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-700">
+          <strong>Note:</strong> These details are managed by the Hostel Administration. 
+          If you notice any errors or need to request a room change, please contact the warden or submit a complaint.
         </div>
       </div>
-
-      {/* Notification Settings */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-             <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                <Bell size={20} />
-            </div>
-            <h3 className="font-semibold text-gray-800">Notifications</h3>
-        </div>
-        <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="font-medium text-gray-700">Email Notifications</p>
-                    <p className="text-sm text-gray-500">Receive emails about room allocation and complaints.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            <hr className="border-gray-100" />
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="font-medium text-gray-700">SMS Alerts</p>
-                    <p className="text-sm text-gray-500">Get text messages for emergency alerts.</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-        </div>
-      </div>
-
-      {/* Admin Only: Hostel Configuration */}
-      {user.role === 'admin' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-             <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-                <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
-                    <Building size={20} />
-                </div>
-                <h3 className="font-semibold text-gray-800">Hostel Configuration (Admin)</h3>
-            </div>
-            <div className="p-6">
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hostel Name</label>
-                    <input type="text" defaultValue="University Boys Hostel" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg" />
-                </div>
-                <button className="text-blue-600 font-medium text-sm hover:underline">Manage Blocks & Wings</button>
-            </div>
-        </div>
-      )}
     </div>
   );
 };

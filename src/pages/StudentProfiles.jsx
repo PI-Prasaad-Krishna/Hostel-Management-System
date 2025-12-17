@@ -33,17 +33,29 @@ const StudentProfiles = () => {
     }
   };
 
-  // 2. Handle Form Submit
+  // Handle Form Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // GENERATE UNIQUE PASSWORD
+    // Strategy: RollNo + "@123" (e.g., "2024CSE001@123")
+    const uniquePassword = `${formData.rollNo}@123`; 
+
     try {
-      await addStudent(formData); // Send data to Backend
-      alert("Student Added Successfully!");
+      const studentDataWithPassword = {
+        ...formData,          
+        password: uniquePassword, // 👈 Uses the unique password
+        role: "student"       
+      };
+
+      await addStudent(studentDataWithPassword); 
       
-      setIsModalOpen(false); // Close Modal
-      fetchStudents();       // Refresh Table
+      // ⚠️ IMPORTANT: Tell the Admin what the password is!
+      alert(`Student Registered Successfully!\n\nCredentials for Student:\nUsername: ${formData.rollNo}\nPassword: ${uniquePassword}`);
       
-      // Reset Form
+      setIsModalOpen(false); 
+      fetchStudents();       
+      
       setFormData({
         name: '', rollNo: '', department: 'CSE', year: '1st Year', 
         gender: 'Male', contact: '', guardianName: '', guardianPhone: ''

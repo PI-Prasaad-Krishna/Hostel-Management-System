@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Building2, ArrowRight, Loader2 } from 'lucide-react';
+// Imported User instead of Mail
+import { User, Lock, Building2, ArrowRight, Loader2 } from 'lucide-react'; 
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  // Changed state from email to username
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,8 +19,9 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/'); // Redirect to dashboard on success
+      // Passing username instead of email to your auth context
+      await login(formData.username, formData.password);
+      navigate('/'); 
     } catch (err) {
       setError(err.toString());
     } finally {
@@ -30,6 +33,7 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
         
+        {/* Header Section - Unchanged */}
         <div className="bg-slate-900 p-8 text-center">
           <div className="mx-auto bg-blue-600 w-12 h-12 rounded-lg flex items-center justify-center mb-4 shadow-lg rotate-3 hover:rotate-6 transition-transform">
             <Building2 className="text-white" size={24} />
@@ -45,21 +49,24 @@ const Login = () => {
             </div>
           )}
 
+          {/* Username Input Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-2.5 text-gray-400" size={20} />
+              {/* Changed Icon to User */}
+              <User className="absolute left-3 top-2.5 text-gray-400" size={20} />
               <input
                 required
-                type="email"
+                type="text" 
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="admin@hostel.com"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="admin_user"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
               />
             </div>
           </div>
 
+          {/* Password Input Field - Unchanged */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <div className="relative">
