@@ -17,10 +17,7 @@ com\example\hostel\repository\StudentRepository.class
 com\example\hostel\repository\AttendanceRecordRepository.class
 com\example\hostel\exception\GlobalExceptionHandler.class
 com\example\hostel\HostelManagementApplication.class
-com\example\hostel\repository\HostelRepository.class
-com\example\hostel\controller\RoomController.class
 com\example\hostel\repository\ComplaintRepository.class
-com\example\hostel\controller\HostelController.class
 com\example\hostel\model\Complaint.class
 com\example\hostel\repository\UserRepository.class
 com\example\hostel\model\Room.class

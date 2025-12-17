@@ -1,8 +1,9 @@
 package com.example.hostel.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,101 +19,43 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    private String roomNumber; // e.g., "101", "A-101"
+    private int floor;
+    private int capacity;      // e.g., 2 beds
+    private int currentOccupancy = 0; // Starts empty
+
+    // Link to the Hostel (Many Rooms belong to One Hostel)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hostel_id")
-    @JsonIgnoreProperties({ "rooms" })
+    @JsonIgnore // Prevents infinite loops when converting to JSON
     private Hostel hostel;
 
-    @Column(name = "room_no", nullable = false, length = 20)
-    private String roomNo;
+    // --- CONSTRUCTORS (Crucial for the Controller!) ---
+    public Room() {}
 
-    @Column(name = "floor_no")
-    private Integer floorNo;
-
-    @Column(length = 20)
-    private String type; // SINGLE / DOUBLE / TRIPLE
-
-    @Column(nullable = false)
-    private Integer capacity;
-
-    @Column(name = "current_occupancy")
-    private Integer currentOccupancy = 0;
-
-    @Column(length = 10)
-    private String gender; // MALE / FEMALE / MIXED
-
-    @Column(length = 20)
-    private String status; // VACANT / PARTIAL / FULL
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Hostel getHostel() {
-        return hostel;
-    }
-
-    public void setHostel(Hostel hostel) {
+    public Room(String roomNumber, int floor, int capacity, Hostel hostel) {
+        this.roomNumber = roomNumber;
+        this.floor = floor;
+        this.capacity = capacity;
         this.hostel = hostel;
     }
 
-    public String getRoomNo() {
-        return roomNo;
-    }
+    // --- GETTERS & SETTERS ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setRoomNo(String roomNo) {
-        this.roomNo = roomNo;
-    }
-
-    public Integer getFloorNo() {
-        return floorNo;
-    }
-
-    public void setFloorNo(Integer floorNo) {
-        this.floorNo = floorNo;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public Integer getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(Integer capacity) {
-        this.capacity = capacity;
-    }
-
-    public Integer getCurrentOccupancy() {
-        return currentOccupancy;
-    }
-
-    public void setCurrentOccupancy(Integer currentOccupancy) {
-        this.currentOccupancy = currentOccupancy;
-    }
-
-    public String getGender() {
-        return gender;
-    }
-
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getRoomNumber() { return roomNumber; }
+    public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
+    
+    public int getFloor() { return floor; }
+    public void setFloor(int floor) { this.floor = floor; }
+    
+    public int getCapacity() { return capacity; }
+    public void setCapacity(int capacity) { this.capacity = capacity; }
+    
+    public int getCurrentOccupancy() { return currentOccupancy; }
+    public void setCurrentOccupancy(int currentOccupancy) { this.currentOccupancy = currentOccupancy; }
+    
+    public Hostel getHostel() { return hostel; }
+    public void setHostel(Hostel hostel) { this.hostel = hostel; }
 }

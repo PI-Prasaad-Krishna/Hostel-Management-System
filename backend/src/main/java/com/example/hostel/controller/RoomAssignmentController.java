@@ -1,144 +1,97 @@
 package com.example.hostel.controller;
 
-import com.example.hostel.model.RoomAssignment;
-import com.example.hostel.repository.RoomAssignmentRepository;
-import com.example.hostel.repository.StudentRepository;
-import com.example.hostel.repository.RoomRepository;
-import com.example.hostel.model.Student;
-import com.example.hostel.model.Room;
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.example.hostel.model.Room;
+import com.example.hostel.model.RoomAssignment;
+import com.example.hostel.model.Student;
+import com.example.hostel.repository.RoomAssignmentRepository;
+import com.example.hostel.repository.RoomRepository;
+import com.example.hostel.repository.StudentRepository;
 
 @RestController
 @RequestMapping("/api/room-assignments")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class RoomAssignmentController {
 
     private final RoomAssignmentRepository assignmentRepository;
     private final StudentRepository studentRepository;
     private final RoomRepository roomRepository;
 
-    public RoomAssignmentController(
-            RoomAssignmentRepository assignmentRepository,
-            StudentRepository studentRepository,
-            RoomRepository roomRepository) {
+    public RoomAssignmentController(RoomAssignmentRepository assignmentRepository, StudentRepository studentRepository, RoomRepository roomRepository) {
         this.assignmentRepository = assignmentRepository;
         this.studentRepository = studentRepository;
         this.roomRepository = roomRepository;
     }
 
-    @GetMapping
-    @Transactional(readOnly = true)
-    public List<RoomAssignment> getAll() {
-        return assignmentRepository.findAll();
-    }
-
-    @GetMapping("/student/{studentId}")
-    @Transactional(readOnly = true)
-    public List<RoomAssignment> getByStudent(@PathVariable Long studentId) {
-        return assignmentRepository.findByStudentId(studentId);
-    }
-
-    @GetMapping("/room/{roomId}")
-    @Transactional(readOnly = true)
-    public List<RoomAssignment> getByRoom(@PathVariable Long roomId) {
-        return assignmentRepository.findByRoomId(roomId);
-    }
-
     @PostMapping
     @Transactional
-    public ResponseEntity<RoomAssignment> assignRoom(@RequestBody RoomAssignment assignment) {
-        if (assignment.getStudent() == null || assignment.getStudent().getId() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (assignment.getRoom() == null || assignment.getRoom().getId() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (assignment.getStartDate() == null) {
-            assignment.setStartDate(LocalDate.now());
+    public ResponseEntity<?> assignRoom(@RequestBody RoomAssignment req) {
+        // 1. Fetch Entities
+        Student student = studentRepository.findById(req.getStudent().getId())
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        Room room = roomRepository.findById(req.getRoom().getId())
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+
+        // 2. Validate Room Capacity
+        if (room.getCurrentOccupancy() >= room.getCapacity()) {
+            return ResponseEntity.badRequest().body("Room is already full!");
         }
 
-        Student student = studentRepository.findById(assignment.getStudent().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Student not found"));
-        Room room = roomRepository.findById(assignment.getRoom().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+        // 3. Create Assignment
+        RoomAssignment assignment = new RoomAssignment();
+        assignment.setStudent(student);
+        assignment.setRoom(room);
+        assignment.setStartDate(LocalDate.now());
+        assignmentRepository.save(assignment);
 
-        // Update student's current room
+        // 4. Update Room Occupancy
+        room.setCurrentOccupancy(room.getCurrentOccupancy() + 1);
+        roomRepository.save(room);
+
+        // 5. Update Student's Current Room
         student.setCurrentRoom(room);
         studentRepository.save(student);
 
-        // Update room occupancy
-        int currentOccupancy = room.getCurrentOccupancy() != null ? room.getCurrentOccupancy() : 0;
-        room.setCurrentOccupancy(currentOccupancy + 1);
-        
-        if (room.getCurrentOccupancy() >= room.getCapacity()) {
-            room.setStatus("FULL");
-        } else if (room.getCurrentOccupancy() > 0) {
-            room.setStatus("PARTIAL");
-        }
-        roomRepository.save(room);
-
-        assignment.setStudent(student);
-        assignment.setRoom(room);
-        
-        RoomAssignment saved = assignmentRepository.save(assignment);
-        assignmentRepository.flush();
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok("Room Assigned Successfully");
     }
 
     @PutMapping("/{id}/release")
     @Transactional
-    public ResponseEntity<RoomAssignment> releaseRoom(@PathVariable Long id) {
-        try {
-            RoomAssignment assignment = assignmentRepository.findById(id)
-                    .orElse(null);
-            
-            if (assignment == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // Check if already released
-            if (assignment.getEndDate() != null) {
-                return ResponseEntity.badRequest().build();
-            }
-            
-            assignment.setEndDate(LocalDate.now());
-            
-            // Update room occupancy - need to reload room to get current state
-            Room room = roomRepository.findById(assignment.getRoom().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-            
-            int currentOccupancy = room.getCurrentOccupancy() != null ? room.getCurrentOccupancy() : 0;
-            room.setCurrentOccupancy(Math.max(0, currentOccupancy - 1));
-            
-            if (room.getCurrentOccupancy() == 0) {
-                room.setStatus("VACANT");
-            } else {
-                room.setStatus("PARTIAL");
-            }
-            roomRepository.save(room);
-            roomRepository.flush();
+    public ResponseEntity<?> releaseRoom(@PathVariable Long id) {
+        RoomAssignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-            // Clear student's current room if this was their current assignment
-            Student student = studentRepository.findById(assignment.getStudent().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Student not found"));
-            
-            if (student.getCurrentRoom() != null && student.getCurrentRoom().getId().equals(room.getId())) {
-                student.setCurrentRoom(null);
-                studentRepository.save(student);
-                studentRepository.flush();
-            }
-
-            RoomAssignment updated = assignmentRepository.save(assignment);
-            assignmentRepository.flush();
-            return ResponseEntity.ok(updated);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+        if (assignment.getEndDate() != null) {
+            return ResponseEntity.badRequest().body("Room already released");
         }
+
+        // 1. Mark as ended
+        assignment.setEndDate(LocalDate.now());
+        assignmentRepository.save(assignment);
+
+        // 2. Decrement Occupancy
+        Room room = assignment.getRoom();
+        room.setCurrentOccupancy(Math.max(0, room.getCurrentOccupancy() - 1));
+        roomRepository.save(room);
+
+        // 3. Clear Student Record
+        Student student = assignment.getStudent();
+        if (student != null) {
+            student.setCurrentRoom(null);
+            studentRepository.save(student);
+        }
+
+        return ResponseEntity.ok("Room Released Successfully");
     }
 }
-

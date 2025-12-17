@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+# Ignore real app config with secrets
+/src/main/resources/application.properties
+# Optional: ignore local overrides and keep a template
+/src/main/resources/application-local.properties
+!/src/main/resources/application.properties.example
