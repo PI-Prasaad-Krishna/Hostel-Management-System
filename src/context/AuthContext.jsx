@@ -1,40 +1,60 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // OPTIONAL: Restore login session on page refresh
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
 
   const login = async (username, password) => {
-    // --- MOCK LOGIN LOGIC ---
-    // Update this check! It probably used to check for an email string.
-    
-    // Check if the username is 'admin' (or whatever your admin username is)
-    if (username.toLowerCase() === 'admin' || username === 'admin_user') {
-      setUser({ 
-        id: 1, 
-        username: username, 
-        name: 'Admin User', 
-        role: 'admin' // <--- This is the key!
+    try {
+      // 1. CALL JAVA BACKEND
+      // We send 'username' because your AuthController expects it (or 'email')
+      const response = await axios.post('http://localhost:8080/api/auth/login', {
+        username: username,
+        password: password
       });
-    } else {
-      // Default to student for any other username
-      setUser({ 
-        id: 2, 
-        username: username, 
-        name: 'Student User', 
-        role: 'student' 
-      });
+
+      // 2. CHECK RESPONSE
+      // Your AuthController returns: { token: "...", user: { ... } }
+      if (response.data && response.data.user) {
+        const userData = response.data.user;
+        
+        // 3. UPDATE STATE
+        setUser(userData);
+        
+        // 4. SAVE TO LOCAL STORAGE (So they don't get logged out on refresh)
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', response.data.token); // Save token if you need it later
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      // Throw error so the Login page shows the red alert box
+      throw new Error(error.response?.data?.message || "Invalid Username or Password");
     }
-    
-    // In a real app, you would make an API call here:
-    // const response = await api.post('/login', { username, password });
-    // setUser(response.data.user);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // Prevents flickering on refresh
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

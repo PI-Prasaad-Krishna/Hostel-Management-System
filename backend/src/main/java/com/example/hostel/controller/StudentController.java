@@ -61,7 +61,7 @@ public class StudentController {
         // --- KEY CHANGE: Use Roll No as the Username ---
         newUser.setUsername(savedStudent.getRollNo()); 
         
-        newUser.setPassword("password"); // Default password (changeable later)
+        newUser.setPassword(savedStudent.getRollNo() + "@123"); // The password for new users
         newUser.setRole("student");
         newUser.setStudent(savedStudent);
         
