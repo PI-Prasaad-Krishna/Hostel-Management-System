@@ -1,16 +1,15 @@
 package com.example.hostel.repository;
 
-import com.example.hostel.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
-    
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.student WHERE u.email = :email")
-    Optional<User> findByEmailWithStudent(@Param("email") String email);
-}
+import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.example.hostel.model.User;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    // Find user by their Roll No (stored as username)
+    Optional<User> findByUsername(String username);
+    
+    // Helper to check if username exists
+    boolean existsByUsername(String username);
+}
