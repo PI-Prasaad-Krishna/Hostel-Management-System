@@ -1,16 +1,24 @@
 package com.example.hostel.controller;
 
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.hostel.model.Student;
 import com.example.hostel.model.User;
 import com.example.hostel.repository.StudentRepository;
 import com.example.hostel.repository.UserRepository;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/students")
@@ -60,6 +68,24 @@ public class StudentController {
         userRepository.save(newUser);
 
         return ResponseEntity.ok(Map.of("message", "Student created! Login with Roll No: " + savedStudent.getRollNo()));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
+        return studentRepository.findById(id).map(existingStudent -> {
+            
+            // Update the fields allowed to be changed
+            // You can add more fields here if you want students to update them
+            existingStudent.setContact(studentDetails.getContact());
+            
+            // If you want to allow updating other fields, add them here:
+            // existingStudent.setName(studentDetails.getName());
+            // existingStudent.setDepartment(studentDetails.getDepartment());
+
+            studentRepository.save(existingStudent);
+            
+            return ResponseEntity.ok(Map.of("message", "Student updated successfully!"));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
