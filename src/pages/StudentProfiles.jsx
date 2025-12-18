@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MoreVertical, MapPin, Phone, Trash2 } from 'lucide-react'; // Added Trash2
+import { Search, Plus, Filter, MoreVertical, MapPin, Phone, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
-// Ensure deleteStudent is available in your service or import api directly
 import { getAllStudents, addStudent, deleteStudent } from '../services/studentServices'; 
+import { getAllRooms } from '../services/roomService'; // <--- 1. IMPORT THIS
 
 const StudentProfiles = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [students, setStudents] = useState([]); 
-
+  const [students, setStudents] = useState([]);
+  const [rooms, setRooms] = useState([]); // <--- 2. NEW STATE FOR ROOMS
+  
   // State to hold form data 
   const [formData, setFormData] = useState({
       name: '', 
@@ -20,18 +21,57 @@ const StudentProfiles = () => {
       guardianPhone: ''
   });
 
-  // 1. Fetch Students when page loads
+  // Fetch Data when page loads
   useEffect(() => {
-    fetchStudents();
+    fetchData();
   }, []);
 
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
-      const data = await getAllStudents();
-      setStudents(data);
+      // 3. FETCH BOTH STUDENTS AND ROOMS
+      const [studentsData, roomsData] = await Promise.all([
+          getAllStudents(),
+          getAllRooms()
+      ]);
+      
+      setStudents(studentsData);
+      setRooms(roomsData); // Store rooms for lookup
     } catch (error) {
-      console.error("Failed to fetch students", error);
+      console.error("Failed to fetch data", error);
     }
+  };
+
+  // 4. HELPER TO FORMAT ROOM DISPLAY
+  const getRoomDisplay = (roomId) => {
+      if (!roomId) {
+          return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Not Allocated
+              </span>
+          );
+      }
+
+      // Find the room object
+      const room = rooms.find(r => r.id === roomId);
+      
+      if (room) {
+          const rNum = room.roomNumber || room.room_number;
+          // Check for hostel name in all possible places
+          const hName = room.hostel?.name || room.hostelName || room.hostel_name || 'Mens Block A';
+          
+          return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Room {rNum} <span className="text-green-600 ml-1 font-normal">({hName})</span>
+              </span>
+          );
+      }
+      
+      // Fallback if ID exists but room not found in list
+      return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              ID: {roomId}
+          </span>
+      );
   };
 
   // Handle Form Submit (Add Student)
@@ -51,7 +91,7 @@ const StudentProfiles = () => {
       alert(`Student Registered Successfully!\n\nCredentials for Student:\nUsername: ${formData.rollNo}\nPassword: ${uniquePassword}`);
       
       setIsModalOpen(false); 
-      fetchStudents();       
+      fetchData(); // Refresh list      
       
       setFormData({
         name: '', rollNo: '', department: 'CSE', year: '1st Year', 
@@ -63,13 +103,12 @@ const StudentProfiles = () => {
     }
   };
 
-  // ✅ NEW: Handle Delete
+  // Handle Delete
   const handleDelete = async (id) => {
     if(window.confirm("Are you sure? This will delete the student and their login account permanently.")) {
         try {
-            // If deleteStudent is not in your service, use: await api.delete(`/students/${id}`);
             await deleteStudent(id); 
-            fetchStudents(); // Refresh list
+            fetchData(); // Refresh list
         } catch(err) {
             console.error(err);
             alert("Failed to delete student.");
@@ -208,7 +247,6 @@ const StudentProfiles = () => {
               <th className="p-4 text-sm font-semibold text-gray-600">Dept</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Contact</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Guardian</th>
-              {/* Added Actions Header */}
               <th className="p-4 text-sm font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
@@ -217,17 +255,11 @@ const StudentProfiles = () => {
                 students.map((student) => (
                 
                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                    {/* 5. USE THE HELPER FUNCTION HERE */}
                     <td className="p-4">
-                        {student.currentRoomId || student.current_room_id ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Room {student.currentRoomId || student.current_room_id}
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Not Allocated
-                            </span>
-                        )}
+                        {getRoomDisplay(student.currentRoomId || student.current_room_id)}
                     </td>
+
                     <td className="p-4 font-medium text-gray-800">{student.name}</td>
                     <td className="p-4 text-gray-600">{student.rollNo}</td>
                     <td className="p-4 text-gray-600">{student.department}</td>
@@ -238,7 +270,6 @@ const StudentProfiles = () => {
                         </div>
                     </td>
                     <td className="p-4 text-gray-600">{student.guardianName}</td>
-                    {/* ✅ Added Delete Button */}
                     <td className="p-4">
                         <button 
                             onClick={() => handleDelete(student.id)} 
@@ -252,7 +283,7 @@ const StudentProfiles = () => {
                 ))
             ) : (
                 <tr>
-                    <td colSpan="6" className="p-8 text-center text-gray-500">
+                    <td colSpan="7" className="p-8 text-center text-gray-500">
                         No students found. Click "Add Student" to create one.
                     </td>
                 </tr>

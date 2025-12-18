@@ -19,9 +19,20 @@ export const assignRoom = async (roomId, studentId) => {
   return response.data;
 };
 
-// 👇 THIS WAS LIKELY MISSING AND CAUSING THE CRASH
 export const vacateRoom = async (studentId) => {
   // Matches Backend: @PostMapping("/vacate/{studentId}")
   const response = await api.post(`/rooms/vacate/${studentId}`);
   return response.data;
+};
+
+export const getRoomDetails = async (roomId) => {
+  try {
+    // Assuming you have an endpoint like /api/rooms/{id}
+    // If not, we might need to fetch all rooms and find it, or update the student API to return full room info.
+    const response = await api.get(`/rooms/${roomId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch room details", error);
+    return null;
+  }
 };

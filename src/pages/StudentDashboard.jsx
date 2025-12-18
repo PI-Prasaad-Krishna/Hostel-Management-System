@@ -1,115 +1,132 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAllStudents } from '../services/studentServices'; // Import service
-import { User as UserIcon, MapPin, BedDouble, LogOut, Mail, Hash, Phone, Building } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { getAllStudents } from '../services/studentServices';
+import { getAllRooms } from '../services/roomService'; // Ensure this matches your file name
+import { User, BedDouble, Building, Phone } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [studentData, setStudentData] = useState(null);
+  const [roomDetails, setRoomDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch real data from DB
   useEffect(() => {
-    const fetchRealData = async () => {
+    const fetchData = async () => {
       if (user?.role === 'student') {
         try {
+          // 1. Fetch Student
           const students = await getAllStudents();
-          // Match by Roll No (checking both formats)
           const myProfile = students.find(s => 
             (s.rollNo === user.username) || (s.roll_no === user.username)
           );
           setStudentData(myProfile);
+
+          // 2. Fetch Room Details if allocated
+          const roomId = myProfile?.currentRoomId || myProfile?.current_room_id;
+          
+          if (roomId) {
+             const allRooms = await getAllRooms(); 
+             const myRoom = allRooms.find(r => r.id === roomId);
+             setRoomDetails(myRoom);
+          }
+
         } catch (error) {
-          console.error("Failed to fetch dashboard data", error);
+          console.error("Failed to fetch data", error);
+        } finally {
+            setLoading(false);
         }
       }
     };
-    fetchRealData();
+    fetchData();
   }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  // Safe checks
+  const dept = studentData?.department || 'General';
+  
+  // --- ROBUST ROOM & HOSTEL NAME EXTRACTION ---
+  let displayRoom = 'Not Allocated';
+  let displayHostel = ''; // Default empty
 
-  if (!user) return <div>Loading...</div>;
+  if (roomDetails) {
+      displayRoom = `Room ${roomDetails.roomNumber || roomDetails.room_number}`;
+      
+      // Check 3 places: Nested Object (Spring Boot default), camelCase, or snake_case
+      displayHostel = 
+          roomDetails.hostel?.name ||       // room.hostel.name
+          roomDetails.hostelName ||         // room.hostelName
+          roomDetails.hostel_name ||        // room.hostel_name
+          'Mens Block A';                   // Fallback if data is missing
+  }
+  // ---------------------------------------------
 
-  // Use DB data if available, otherwise fall back to login info
-  const displayName = studentData?.name || user.name;
-  const displayRoom = studentData?.current_room_id 
-    ? `Room ${studentData.current_room_id}` 
-    : 'Not Allocated Yet';
+  // Card Component
+  const StatCard = ({ title, value, subValue, icon: Icon, color, isLoading }) => (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-lg bg-${color}-100 text-${color}-600`}>
+          <Icon size={24} />
+        </div>
+      </div>
+      
+      {isLoading ? (
+          <div className="space-y-2">
+            <div className="h-6 w-24 bg-gray-100 rounded animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-50 rounded animate-pulse"></div>
+          </div>
+      ) : (
+          <div>
+            <h3 className="text-2xl font-bold text-gray-800">{value || '--'}</h3>
+            {/* Show Hostel Name in smaller gray text below the room number */}
+            {subValue && <p className="text-sm text-gray-500 font-medium mt-1">{subValue}</p>}
+          </div>
+      )}
+      
+      <p className="text-gray-400 text-sm font-medium mt-3">{title}</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
-      <div className="bg-white max-w-3xl w-full rounded-2xl shadow-xl overflow-hidden">
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">My Overview</h1>
+        <p className="text-gray-500 text-sm">Welcome back, {user.name || 'Student'}.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Header Section */}
-        <div className="bg-blue-600 p-8 text-center relative">
-            <div className="absolute top-4 right-4 bg-blue-500 px-3 py-1 rounded-full text-xs text-white font-mono">
-                {studentData?.rollNo || user.username}
-            </div>
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 text-4xl font-bold text-blue-600 shadow-lg">
-                {displayName.charAt(0)}
-            </div>
-            <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-            <p className="text-blue-100 font-medium mt-1 uppercase tracking-widest text-sm">Student Portal</p>
-        </div>
+        <StatCard 
+            title="Department" 
+            value={dept} 
+            icon={Building} 
+            color="blue" 
+            isLoading={loading}
+        />
 
-        {/* Details Grid */}
-        <div className="p-8 space-y-6">
-            <h2 className="text-xl font-bold text-gray-800 border-b pb-2">My Overview</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Department */}
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border hover:border-blue-300 transition-colors">
-                    <div className="bg-blue-100 p-3 rounded-lg text-blue-600"><Building size={20}/></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase">Department</p>
-                        <p className="text-gray-800 font-medium">{studentData?.department || 'N/A'}</p>
-                    </div>
-                </div>
+        {/* ✅ Updated Room Card with Hostel Name */}
+        <StatCard 
+            title="Current Allocation" 
+            value={displayRoom} 
+            subValue={displayHostel} 
+            icon={BedDouble} 
+            color={roomDetails ? "green" : "yellow"} 
+            isLoading={loading}
+        />
 
-                {/* Role */}
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border hover:border-purple-300 transition-colors">
-                    <div className="bg-purple-100 p-3 rounded-lg text-purple-600"><UserIcon size={20}/></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase">Role</p>
-                        <p className="text-gray-800 font-medium capitalize">{user.role}</p>
-                    </div>
-                </div>
+        <StatCard 
+            title="My Role" 
+            value="Student" 
+            icon={User} 
+            color="purple" 
+            isLoading={loading}
+        />
 
-                {/* Contact */}
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border hover:border-orange-300 transition-colors">
-                    <div className="bg-orange-100 p-3 rounded-lg text-orange-600"><Phone size={20}/></div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase">Phone</p>
-                        <p className="text-gray-800 font-medium">{studentData?.contact || 'N/A'}</p>
-                    </div>
-                </div>
-
-                {/* Room Status (REAL DATA) */}
-                <div className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${studentData?.current_room_id ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                    <div className={`p-3 rounded-lg ${studentData?.current_room_id ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
-                        <BedDouble size={20}/>
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500 font-semibold uppercase">Room Status</p>
-                        <p className="text-gray-800 font-bold">{displayRoom}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Logout Button */}
-            <button 
-                onClick={handleLogout} 
-                className="w-full mt-8 bg-red-50 text-red-600 font-bold py-4 rounded-xl hover:bg-red-100 hover:shadow-md transition-all flex items-center justify-center gap-2"
-            >
-                <LogOut size={20} /> Sign Out
-            </button>
-        </div>
+        <StatCard 
+            title="Phone" 
+            value={studentData?.contact} 
+            icon={Phone} 
+            color="orange" 
+            isLoading={loading}
+        />
       </div>
     </div>
   );

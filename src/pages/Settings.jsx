@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getAllStudents, updateStudent } from '../services/studentServices'; 
-import { User, Mail, Phone, Home, Building, Save, Loader2 } from 'lucide-react';
+import { getAllStudents, updateStudent } from '../services/studentServices';
+import { getAllRooms } from '../services/roomService'; // Ensure this path matches your file
+import { User, Mail, Phone, Home, Save, Loader2 } from 'lucide-react';
 
 const Settings = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  
-  // New State to hold the FULL object from DB
   const [rawStudent, setRawStudent] = useState(null);
 
   const [profileData, setProfileData] = useState({
@@ -31,16 +30,44 @@ const Settings = () => {
           );
 
           if (myProfile) {
-            // 1. SAVE THE FULL ORIGINAL OBJECT
             setRawStudent(myProfile);
 
-            // 2. Set the display data
+            // --- 1. ROBUST ROOM & HOSTEL FETCHING ---
+            let displayRoom = 'Not Allocated Yet';
+            const roomId = myProfile.current_room_id || myProfile.currentRoomId;
+
+            if (roomId) {
+                try {
+                    const allRooms = await getAllRooms();
+                    const myRoom = allRooms.find(r => r.id === roomId);
+                    
+                    if (myRoom) {
+                        const rNum = myRoom.roomNumber || myRoom.room_number;
+                        
+                        // Check 3 places for the name + Updated Default to "Mens Block A"
+                        const hName = 
+                            myRoom.hostel?.name ||       // Nested object
+                            myRoom.hostelName ||         // camelCase
+                            myRoom.hostel_name ||        // snake_case
+                            'Mens Block A';              // ✅ FIXED FALLBACK
+
+                        displayRoom = `Room ${rNum} (${hName})`;
+                    } else {
+                        displayRoom = `Room ID: ${roomId}`;
+                    }
+                } catch (err) {
+                    console.error("Failed to load room info", err);
+                    displayRoom = `Room ID: ${roomId}`;
+                }
+            }
+
+            // --- 2. SET DISPLAY DATA ---
             setProfileData({
               id: myProfile.id,
               name: myProfile.name,
               email: myProfile.rollNo || myProfile.roll_no, 
               phone: myProfile.contact, 
-              room: myProfile.current_room_id ? `Room ID: ${myProfile.current_room_id}` : 'Not Allocated Yet',
+              room: displayRoom, // ✅ Shows "Room 101 (Mens Block A)"
               department: myProfile.department
             });
           }
@@ -58,14 +85,10 @@ const Settings = () => {
 
     setLoading(true);
     try {
-        // 3. MERGE OLD DATA WITH NEW PHONE NUMBER
-        // We take the 'rawStudent' (full object) and overwrite only the 'contact'
         const updatedPayload = {
             ...rawStudent, 
             contact: profileData.phone 
         };
-
-        console.log("Sending Payload to Backend:", updatedPayload); // Debug check
 
         await updateStudent(profileData.id, updatedPayload);
         alert("Phone number updated successfully!");
@@ -120,7 +143,7 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Room Number */}
+          {/* Assigned Room */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Room</label>
             <div className="relative">
