@@ -1,37 +1,59 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getAllStudents } from '../services/studentServices';
-import { getAllRooms } from '../services/roomService'; // Ensure this matches your file name
+import { getAllRooms } from '../services/roomService';
+import { getAllHostels } from '../services/hostelService'; 
 import { User, BedDouble, Building, Phone } from 'lucide-react';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const [studentData, setStudentData] = useState(null);
   const [roomDetails, setRoomDetails] = useState(null);
+  const [hostelName, setHostelName] = useState(''); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?.role === 'student') {
         try {
-          // 1. Fetch Student
-          const students = await getAllStudents();
+          // 1. Fetch ALL Data in parallel
+          const [students, rooms, hostels] = await Promise.all([
+             getAllStudents(),
+             getAllRooms(),
+             getAllHostels()
+          ]);
+
+          // 2. Find Current Student
           const myProfile = students.find(s => 
             (s.rollNo === user.username) || (s.roll_no === user.username)
           );
           setStudentData(myProfile);
 
-          // 2. Fetch Room Details if allocated
+          // 3. Find Room & Match Hostel
           const roomId = myProfile?.currentRoomId || myProfile?.current_room_id;
           
           if (roomId) {
-             const allRooms = await getAllRooms(); 
-             const myRoom = allRooms.find(r => r.id === roomId);
+             const myRoom = rooms.find(r => r.id === roomId);
              setRoomDetails(myRoom);
+
+             if (myRoom) {
+                 // Try getting ID (supports camelCase, snake_case, or nested)
+                 const hId = myRoom.hostelId || myRoom.hostel_id || myRoom.hostel?.id;
+                 
+                 // Look up the real name from the hostels list
+                 // Using '==' to safely match string IDs with number IDs
+                 const foundHostel = hostels.find(h => h.id == hId);
+                 
+                 if (foundHostel) {
+                     setHostelName(foundHostel.name); 
+                 } else {
+                     setHostelName(myRoom.hostel?.name || 'Unknown Hostel');
+                 }
+             }
           }
 
         } catch (error) {
-          console.error("Failed to fetch data", error);
+          console.error("Failed to fetch dashboard data", error);
         } finally {
             setLoading(false);
         }
@@ -42,22 +64,9 @@ const StudentDashboard = () => {
 
   // Safe checks
   const dept = studentData?.department || 'General';
-  
-  // --- ROBUST ROOM & HOSTEL NAME EXTRACTION ---
-  let displayRoom = 'Not Allocated';
-  let displayHostel = ''; // Default empty
-
-  if (roomDetails) {
-      displayRoom = `Room ${roomDetails.roomNumber || roomDetails.room_number}`;
-      
-      // Check 3 places: Nested Object (Spring Boot default), camelCase, or snake_case
-      displayHostel = 
-          roomDetails.hostel?.name ||       // room.hostel.name
-          roomDetails.hostelName ||         // room.hostelName
-          roomDetails.hostel_name ||        // room.hostel_name
-          'Mens Block A';                   // Fallback if data is missing
-  }
-  // ---------------------------------------------
+  const displayRoom = roomDetails 
+    ? `Room ${roomDetails.roomNumber || roomDetails.room_number}` 
+    : 'Not Allocated';
 
   // Card Component
   const StatCard = ({ title, value, subValue, icon: Icon, color, isLoading }) => (
@@ -76,7 +85,6 @@ const StudentDashboard = () => {
       ) : (
           <div>
             <h3 className="text-2xl font-bold text-gray-800">{value || '--'}</h3>
-            {/* Show Hostel Name in smaller gray text below the room number */}
             {subValue && <p className="text-sm text-gray-500 font-medium mt-1">{subValue}</p>}
           </div>
       )}
@@ -102,11 +110,10 @@ const StudentDashboard = () => {
             isLoading={loading}
         />
 
-        {/* ✅ Updated Room Card with Hostel Name */}
         <StatCard 
             title="Current Allocation" 
             value={displayRoom} 
-            subValue={displayHostel} 
+            subValue={hostelName} 
             icon={BedDouble} 
             color={roomDetails ? "green" : "yellow"} 
             isLoading={loading}

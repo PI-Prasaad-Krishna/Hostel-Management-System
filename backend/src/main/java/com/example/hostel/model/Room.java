@@ -1,6 +1,7 @@
 package com.example.hostel.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,6 +30,11 @@ public class Room {
     @JoinColumn(name = "hostel_id")
     @JsonIgnore // Prevents infinite loops when converting to JSON
     private Hostel hostel;
+
+    @JsonProperty("hostelId")
+    public Long getHostelIdValue() {
+        return hostel != null ? hostel.getId() : null;
+    }
 
     // --- CONSTRUCTORS (Crucial for the Controller!) ---
     public Room() {}

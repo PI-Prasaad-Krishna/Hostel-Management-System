@@ -45,6 +45,9 @@ public class Student {
     @Column(name = "guardian_phone", length = 50)
     private String guardianPhone;
 
+    @Column(name = "status")
+    private String status = "In";
+
     // 👇 FIXED: Added insertable=false, updatable=false to prevent conflict
     @ManyToOne
     @JoinColumn(name = "current_room_id", insertable = false, updatable = false)
@@ -101,4 +104,7 @@ public class Student {
 
     public Long getCurrentRoomId() { return currentRoomId; }
     public void setCurrentRoomId(Long currentRoomId) { this.currentRoomId = currentRoomId; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

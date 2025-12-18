@@ -81,6 +81,10 @@ public class StudentController {
             // If you want to allow updating other fields, add them here:
             // existingStudent.setName(studentDetails.getName());
             // existingStudent.setDepartment(studentDetails.getDepartment());
+            // This allows the Attendance Page to actually save the "In" or "Out" status
+            if (studentDetails.getStatus() != null) {
+                existingStudent.setStatus(studentDetails.getStatus());
+            }
 
             studentRepository.save(existingStudent);
             
