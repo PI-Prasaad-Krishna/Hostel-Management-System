@@ -5,32 +5,40 @@ import {
   CalendarCheck, 
   MessageSquare, 
   Settings, 
-  Users,       // Icon for Students
-  BedDouble,   // Icon for Rooms
-  Building,    // Icon for Hostels
-  LogOut 
+  Users, 
+  BedDouble, 
+  Building, 
+  LogOut,
+  Home // Added Home icon just in case
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
-  const { user, logout } = useAuth(); // Get user to check role if needed
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Define all menu items
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  // 1. Define ALL possible links
+  const allMenuItems = [
+    // Everyone sees Dashboard (Points to "/" which is now smart)
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'student'] },
     
-    // Admin Only Links
-    { icon: Users, label: 'Students', path: '/students' },
-    { icon: BedDouble, label: 'Room Allocation', path: '/rooms' },
-    { icon: Building, label: 'Hostel Management', path: '/hostels' },
+    // Admin Only
+    { icon: Users, label: 'Students', path: '/students', roles: ['admin'] },
+    { icon: BedDouble, label: 'Room Allocation', path: '/rooms', roles: ['admin'] },
+    { icon: Building, label: 'Hostel Mgmt', path: '/hostels', roles: ['admin'] },
     
-    // Common Links
-    { icon: CalendarCheck, label: 'Attendance', path: '/attendance' },
-    { icon: MessageSquare, label: 'Complaints', path: '/complaints' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    // Common
+    { icon: CalendarCheck, label: 'Attendance', path: '/attendance', roles: ['admin', 'student'] },
+    { icon: MessageSquare, label: 'Complaints', path: '/complaints', roles: ['admin', 'student'] },
+    { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin', 'student'] },
   ];
+
+  // 2. Filter links based on the current user's role
+  // We check if the item.roles array includes the current user's role
+  const visibleMenuItems = allMenuItems.filter(item => 
+    item.roles.includes(user?.role || '')
+  );
 
   const handleLogout = () => {
     logout();
@@ -49,8 +57,10 @@ const Sidebar = () => {
 
       {/* Navigation Links */}
       <nav className="flex-1 space-y-1">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
+          
+          // ✅ Standard Matching: Since Dashboard is "/", it matches perfectly
           const isActive = location.pathname === item.path;
           
           return (

@@ -7,11 +7,21 @@ import Settings from './pages/Settings';
 import StudentProfiles from './pages/StudentProfiles';
 import HostelManagement from './pages/HostelManagement';
 
-// IMPORT YOUR REAL PAGES HERE
-import Dashboard from './pages/Dashboard';
+// IMPORT YOUR PAGES
+import Dashboard from './pages/Dashboard';           // Admin View
+import StudentDashboard from './pages/StudentDashboard'; // Student View
 import RoomAllocation from './pages/RoomAllocation';
 import Attendance from './pages/Attendance';
-import Login from './pages/Login'; // <--- This imports the styled login page
+import Login from './pages/Login';
+
+// 1. Helper Component to Decide Which Dashboard to Show
+const DashboardSwitcher = () => {
+    const { user } = useAuth();
+    if (!user) return <Navigate to="/login" />;
+    
+    // ✅ The Magic: Show different components at the SAME URL
+    return user.role === 'admin' ? <Dashboard /> : <StudentDashboard />;
+};
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -29,26 +39,15 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           
           <Route path="/" element={<Layout />}>
-            <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* ✅ FIXED: The root path "/" now intelligently serves the correct dashboard */}
+            <Route index element={<DashboardSwitcher />} />
             
             {/* Admin Only Routes */}
-            <Route path="rooms" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                    <RoomAllocation />
-                </ProtectedRoute>
-            } />
-            <Route path="hostels" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <HostelManagement />
-                </ProtectedRoute>
-            } />
-
-            <Route path="students" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                    <StudentProfiles />
-                </ProtectedRoute>
-            } />
+            <Route path="rooms" element={<ProtectedRoute allowedRoles={['admin']}> <RoomAllocation /> </ProtectedRoute>} />
+            <Route path="hostels" element={<ProtectedRoute allowedRoles={['admin']}> <HostelManagement /> </ProtectedRoute>} />
+            <Route path="students" element={<ProtectedRoute allowedRoles={['admin']}> <StudentProfiles /> </ProtectedRoute>} />
             
+            {/* Shared Routes */}
             <Route path="attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
             <Route path="complaints" element={<ProtectedRoute><Complaints /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
