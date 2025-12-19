@@ -1,14 +1,15 @@
 package com.example.hostel.repository;
 
-import java.util.Optional;
-
+import com.example.hostel.model.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.hostel.model.Student;
+import java.util.Optional;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
-    // This was missing!
+
+    // Check if a student exists using roll number
     boolean existsByRollNo(String rollNo);
-    
+
+    // Fetch student details using roll number
     Optional<Student> findByRollNo(String rollNo);
 }

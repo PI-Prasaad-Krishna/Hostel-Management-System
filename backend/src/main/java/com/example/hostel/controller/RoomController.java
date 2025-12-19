@@ -42,7 +42,7 @@ public class RoomController {
 
     @GetMapping("/hostel/{hostelId}")
     public List<Room> getByHostel(@PathVariable Long hostelId) {
-        return roomRepository.findByHostelId(hostelId);
+        return roomRepository.findByHostel_Id(hostelId);
     }
 
     @PostMapping

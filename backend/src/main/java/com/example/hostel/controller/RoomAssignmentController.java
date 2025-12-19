@@ -60,7 +60,8 @@ public class RoomAssignmentController {
         roomRepository.save(room);
 
         // 5. Update Student's Current Room
-        student.setCurrentRoom(room);
+        student.setCurrentRoomId(room.getId());
+
         studentRepository.save(student);
 
         return ResponseEntity.ok("Room Assigned Successfully");
@@ -88,7 +89,8 @@ public class RoomAssignmentController {
         // 3. Clear Student Record
         Student student = assignment.getStudent();
         if (student != null) {
-            student.setCurrentRoom(null);
+            student.setCurrentRoomId(null);
+
             studentRepository.save(student);
         }
 

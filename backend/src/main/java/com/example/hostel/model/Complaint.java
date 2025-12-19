@@ -1,16 +1,8 @@
 package com.example.hostel.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -22,15 +14,23 @@ public class Complaint {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "student_id")
-    @JsonIgnoreProperties({"complaints", "currentRoom"})
+    /* =========================
+       RELATIONSHIPS
+       ========================= */
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "student_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "complaints", "currentRoom"})
     private Student student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
-    @JsonIgnoreProperties({"complaints"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "complaints"})
     private Room room;
+
+    /* =========================
+       CORE FIELDS
+       ========================= */
 
     @Column(nullable = false, length = 150)
     private String title;
@@ -41,35 +41,61 @@ public class Complaint {
     @Column(length = 50)
     private String category;
 
-    @Column(length = 20)
-    private String status; // OPEN / IN_PROGRESS / RESOLVED / CLOSED
+    @Column(nullable = false, length = 20)
+    private String status;   // OPEN / IN_PROGRESS / RESOLVED / CLOSED
 
-    @Column(name = "created_at")
+    @Column(length = 20)
+    private String priority; // High / Medium / Low
+
+    /* =========================
+       TIMESTAMPS
+       ========================= */
+
+    @Column(name = "created_at", updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
+
+    /* =========================
+       LIFECYCLE HOOKS
+       ========================= */
 
     @PrePersist
     public void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = createdAt;
-        if (status == null) {
-            status = "OPEN";
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+
+        if (this.status == null) {
+            this.status = "OPEN";
+        }
+
+        if (this.priority == null) {
+            this.priority = "Low";
         }
     }
 
     @PreUpdate
     public void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
+
+    /* =========================
+       CONSTRUCTORS
+       ========================= */
+
+    public Complaint() {
+        // Required by JPA
+    }
+
+    /* =========================
+       GETTERS & SETTERS
+       ========================= */
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public Student getStudent() {
@@ -120,21 +146,19 @@ public class Complaint {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public String getPriority() {
+        return priority;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }
-
-

@@ -1,11 +1,12 @@
 package com.example.hostel.repository;
 
-import java.util.List;
-
+import com.example.hostel.model.Room;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.example.hostel.model.Room;
+import java.util.List;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
-    List<Room> findByHostelId(Long hostelId);
+
+    // Fetch rooms belonging to a specific hostel
+    List<Room> findByHostel_Id(Long hostelId);
 }
