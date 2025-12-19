@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter } from 'lucide-react';
-import { getComplaints, resolveComplaint } from '../services/complaintService';
+import { useAuth } from '../context/AuthContext';
+import { Plus, Filter, Search } from 'lucide-react';
+
+import NewComplaintModal from '../components/NewComplaintModal';
+import {
+  getComplaints,
+  createComplaint,
+  resolveComplaint
+} from '../services/complaintService';
 
 const Complaints = () => {
-  const [complaints, setComplaints] = useState([]);
-  const [filteredComplaints, setFilteredComplaints] = useState([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
+  const [complaints, setComplaints] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Load complaints on page load
   useEffect(() => {
-    fetchComplaints();
+    loadComplaints();
   }, []);
 
-  const fetchComplaints = async () => {
+  const loadComplaints = async () => {
     try {
+      setLoading(true);
       const res = await getComplaints();
       setComplaints(res.data);
-      setFilteredComplaints(res.data);
     } catch (err) {
       console.error('Failed to load complaints', err);
     } finally {
@@ -24,179 +33,174 @@ const Complaints = () => {
     }
   };
 
-  // ---------- FILTER FUNCTIONS ----------
-
-  const filterByPriority = (priority) => {
-    const result = complaints.filter(c => c.priority === priority);
-    setFilteredComplaints(result);
-    setShowFilter(false);
-  };
-
-  const sortLatest = () => {
-    const result = [...complaints].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    setFilteredComplaints(result);
-    setShowFilter(false);
-  };
-
-  const sortOldest = () => {
-    const result = [...complaints].sort(
-      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-    );
-    setFilteredComplaints(result);
-    setShowFilter(false);
-  };
-
-  const resetFilter = () => {
-    setFilteredComplaints(complaints);
-    setShowFilter(false);
-  };
-
-  // ---------- RESOLVE ----------
-
-  const handleResolve = async (id) => {
-    try {
-      await resolveComplaint(id);
-      fetchComplaints();
-    } catch (err) {
-      console.error('Failed to resolve complaint', err);
+  // Helpers for UI
+  const getPriorityColor = (p) => {
+    switch (p) {
+      case 'High':
+        return 'bg-red-100 text-red-600';
+      case 'Medium':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-blue-100 text-blue-600';
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-gray-500">Loading complaints...</div>;
-  }
+  const getStatusColor = (s) => {
+    switch (s) {
+      case 'RESOLVED':
+        return 'bg-green-100 text-green-600';
+      case 'IN_PROGRESS':
+        return 'bg-purple-100 text-purple-600';
+      default:
+        return 'bg-gray-100 text-gray-600';
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">Complaints</h2>
-        <p className="text-sm text-gray-500">Track and resolve hostel issues</p>
-      </div>
-
-      {/* Search + Filter */}
-      <div className="flex gap-4 relative">
-        {/* Search */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-          <input
-            placeholder="Search complaints..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg"
-          />
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Complaints</h2>
+          <p className="text-sm text-gray-500">
+            Track and resolve hostel issues
+          </p>
         </div>
 
-        {/* Filter Button */}
-        <button
-          onClick={() => setShowFilter(prev => !prev)}
-          className="flex items-center gap-2 px-4 py-2 border rounded-lg bg-white hover:bg-gray-50"
-        >
-          <Filter size={18} />
-          Filter
-        </button>
-
-        {/* Filter Dropdown */}
-        {showFilter && (
-          <div className="absolute right-0 top-12 bg-white border rounded-lg shadow-lg w-48 z-50">
-            <button
-              onClick={() => filterByPriority('High')}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-            >
-              Priority: High
-            </button>
-            <button
-              onClick={() => filterByPriority('Medium')}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-            >
-              Priority: Medium
-            </button>
-            <button
-              onClick={() => filterByPriority('Low')}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-            >
-              Priority: Low
-            </button>
-
-            <hr />
-
-            <button
-              onClick={sortLatest}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-            >
-              Latest First
-            </button>
-            <button
-              onClick={sortOldest}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-            >
-              Oldest First
-            </button>
-
-            <hr />
-
-            <button
-              onClick={resetFilter}
-              className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-            >
-              Clear Filter
-            </button>
-          </div>
+        {user?.role === 'student' && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
+          >
+            <Plus size={18} /> New Complaint
+          </button>
         )}
       </div>
 
+      {/* Filter Bar (UI only for now) */}
+      <div className="flex gap-4 bg-white p-4 rounded border">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search complaints..."
+            className="w-full pl-9 pr-3 py-2 border rounded"
+          />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 border rounded">
+          <Filter size={16} /> Filter
+        </button>
+      </div>
+
       {/* Table */}
-      <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="bg-white rounded border overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="p-4">ID</th>
-              <th className="p-4">Title</th>
-              <th className="p-4">Priority</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Created</th>
-              <th className="p-4">Action</th>
+              <th className="p-3 text-sm">ID</th>
+              <th className="p-3 text-sm">Title</th>
+              <th className="p-3 text-sm">Priority</th>
+              <th className="p-3 text-sm">Status</th>
+              <th className="p-3 text-sm">Created</th>
+              {user?.role === 'admin' && (
+                <th className="p-3 text-sm">Action</th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {filteredComplaints.map(c => (
-              <tr key={c.id} className="border-t">
-                <td className="p-4">{c.id}</td>
-                <td className="p-4">{c.title}</td>
-                <td className="p-4">
+            {loading && (
+              <tr>
+                <td colSpan="6" className="p-4 text-center text-gray-500">
+                  Loading...
+                </td>
+              </tr>
+            )}
+
+            {!loading && complaints.length === 0 && (
+              <tr>
+                <td colSpan="6" className="p-4 text-center text-gray-500">
+                  No complaints found
+                </td>
+              </tr>
+            )}
+
+            {complaints.map((item) => (
+              <tr key={item.id} className="border-t hover:bg-gray-50">
+                <td className="p-3 text-sm">{item.id}</td>
+                <td className="p-3 text-sm">{item.title}</td>
+                <td className="p-3">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium
-                      ${c.priority === 'High' && 'bg-red-100 text-red-600'}
-                      ${c.priority === 'Medium' && 'bg-yellow-100 text-yellow-600'}
-                      ${c.priority === 'Low' && 'bg-green-100 text-green-600'}
-                    `}
+                    className={`px-2 py-1 rounded text-xs ${getPriorityColor(
+                      item.priority || 'Low'
+                    )}`}
                   >
-                    {c.priority}
+                    {item.priority || 'Low'}
                   </span>
                 </td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-600">
-                    {c.status}
+                <td className="p-3">
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${getStatusColor(
+                      item.status
+                    )}`}
+                  >
+                    {item.status}
                   </span>
                 </td>
-                <td className="p-4">
-                  {new Date(c.createdAt).toLocaleDateString()}
+                <td className="p-3 text-sm">
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleDateString()
+                    : '-'}
                 </td>
-                <td className="p-4">
-                  {c.status !== 'RESOLVED' && (
-                    <button
-                      onClick={() => handleResolve(c.id)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Resolve
-                    </button>
-                  )}
-                </td>
+
+                {user?.role === 'admin' && (
+                  <td className="p-3">
+                    {item.status !== 'RESOLVED' && (
+                      <button
+                        onClick={async () => {
+                          await resolveComplaint(item.id);
+                          loadComplaints();
+                        }}
+                        className="text-blue-600 text-sm"
+                      >
+                        Resolve
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Modal */}
+      <NewComplaintModal
+  open={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  onSubmit={async (data) => {
+    try {
+      const payload = {
+        title: data.issue,
+        description: data.issue,
+        priority: data.priority,
+        student: {
+          rollNo: user.username   // <-- THIS WAS MISSING
+        }
+      };
+
+      console.log("FINAL PAYLOAD SENT TO BACKEND:", payload);
+
+      await createComplaint(payload);
+
+      setIsModalOpen(false);
+      loadComplaints();
+    } catch (err) {
+      console.error("API ERROR:", err);
+      alert("Complaint submission failed");
+    }
+  }}
+/>
+
     </div>
   );
 };
